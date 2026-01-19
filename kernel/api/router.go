@@ -89,6 +89,7 @@ func ServeAPI(ginServer *gin.Engine) {
 	ginServer.Handle("POST", "/api/storage/removeOutlineStorage", model.CheckAuth, model.CheckAdminRole, model.CheckReadonly, removeOutlineStorage)
 
 	ginServer.Handle("POST", "/api/account/login", model.CheckAuth, model.CheckAdminRole, model.CheckReadonly, login)
+	ginServer.Handle("POST", "/api/account/loginOffline", model.CheckAuth, model.CheckAdminRole, model.CheckReadonly, loginOffline)
 	ginServer.Handle("POST", "/api/account/checkActivationcode", model.CheckAuth, model.CheckAdminRole, model.CheckReadonly, checkActivationcode)
 	ginServer.Handle("POST", "/api/account/useActivationcode", model.CheckAuth, model.CheckAdminRole, model.CheckReadonly, useActivationcode)
 	ginServer.Handle("POST", "/api/account/deactivate", model.CheckAuth, model.CheckAdminRole, model.CheckReadonly, deactivateUser)

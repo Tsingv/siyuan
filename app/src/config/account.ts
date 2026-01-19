@@ -164,7 +164,7 @@ ${renewHTML}<div class="fn__hr--b"></div>`;
             </button>
         </div>
         <div class="fn__hr--b"></div>
-        <div class="fn__flex">  
+        <div class="fn__flex">
             <label>
                 ${window.siyuan.languages.accountDisplayTitle}
                 <input class="b3-switch fn__flex-center" id="displayTitle" type="checkbox"${window.siyuan.config.account.displayTitle ? " checked" : ""}/>
@@ -186,6 +186,12 @@ ${renewHTML}<div class="fn__hr--b"></div>`;
         }
         return `<div class="fn__flex config-account">
 <div class="b3-form__space config-account__center">
+    <div class="fn__flex" style="margin-bottom: 16px; justify-content: center;">
+        <button class="b3-button b3-button--outline" id="switchLoginMode" style="min-width: 200px;">
+            <svg><use xlink:href="#iconRefresh"></use></svg>
+            切换到离线登录
+        </button>
+    </div>
     <div class="config-account__form" id="form1">
         <div class="b3-form__icon">
             <svg class="b3-form__icon-icon"><use xlink:href="#iconAccount"></use></svg>
@@ -225,6 +231,24 @@ ${renewHTML}<div class="fn__hr--b"></div>`;
             <a href="${getCloudURL("register")}" class="b3-button b3-button--cancel${window.siyuan.config.system.container === "ios" ? " fn__none" : ""}" target="_blank">${window.siyuan.languages.register}</a>
         </div>
     </div>
+    <div class="fn__none config-account__form" id="formOffline">
+        <div class="b3-form__icon">
+            <svg class="b3-form__icon-icon"><use xlink:href="#iconAccount"></use></svg>
+            <input id="offlineUserId" class="b3-text-field fn__block b3-form__icon-input" placeholder="User ID (可选)">
+        </div>
+        <div class="fn__hr--b"></div>
+        <div class="b3-form__icon">
+            <svg class="b3-form__icon-icon"><use xlink:href="#iconAccount"></use></svg>
+            <input id="offlineUserName" class="b3-text-field fn__block b3-form__icon-input" placeholder="用户名 (可选)">
+        </div>
+        <div class="fn__hr--b"></div>
+        <div class="b3-form__icon">
+            <svg class="b3-form__icon-icon"><use xlink:href="#iconAccount"></use></svg>
+            <input id="offlineUserNickname" class="b3-text-field fn__block b3-form__icon-input" placeholder="昵称 (可选)">
+        </div>
+        <div class="fn__hr--b"></div>
+        <button id="loginOfflineBtn" class="b3-button fn__block">离线登录</button>
+    </div>
     <div class="fn__none config-account__form" id="form2">
         <div class="b3-form__icon">
             <svg class="b3-form__icon-icon"><use xlink:href="#iconLock"></use></svg>
@@ -259,7 +283,8 @@ ${renewHTML}<div class="fn__hr--b"></div>`;
                 });
             });
         }
-        const agreeLoginElement = element.querySelector("#agreeLogin") as HTMLInputElement;
+
+        // 先检查是否是已登录状态
         const userNameElement = element.querySelector("#userName") as HTMLInputElement;
         if (!userNameElement) {
             const refreshElement = element.querySelector("#refresh");
@@ -304,9 +329,13 @@ ${renewHTML}<div class="fn__hr--b"></div>`;
             });
             element.querySelectorAll("input[type='checkbox']").forEach(item => {
                 item.addEventListener("change", () => {
+                    const displayTitleElement = element.querySelector("#displayTitle") as HTMLInputElement;
+                    const displayVIPElement = element.querySelector("#displayVIP") as HTMLInputElement;
+
                     fetchPost("/api/setting/setAccount", {
-                        displayTitle: (element.querySelector("#displayTitle") as HTMLInputElement).checked,
-                        displayVIP: (element.querySelector("#displayVIP") as HTMLInputElement).checked,
+                        displayTitle: displayTitleElement ? displayTitleElement.checked : window.siyuan.config.account.displayTitle,
+                        displayVIP: displayVIPElement ? displayVIPElement.checked : window.siyuan.config.account.displayVIP,
+                        useOfflineMode: window.siyuan.config.account.useOfflineMode,
                     }, (response) => {
                         window.siyuan.config.account.displayTitle = response.data.displayTitle;
                         window.siyuan.config.account.displayVIP = response.data.displayVIP;
@@ -333,6 +362,45 @@ ${renewHTML}<div class="fn__hr--b"></div>`;
             return;
         }
 
+        // 切换登录模式按钮
+        const switchLoginModeBtn = element.querySelector("#switchLoginMode");
+        const form1Element = element.querySelector("#form1");
+        const formOfflineElement = element.querySelector("#formOffline");
+        let isOfflineMode = false;
+
+        switchLoginModeBtn?.addEventListener("click", () => {
+            isOfflineMode = !isOfflineMode;
+            if (isOfflineMode) {
+                form1Element.classList.add("fn__none");
+                formOfflineElement.classList.remove("fn__none");
+                switchLoginModeBtn.innerHTML = `<svg><use xlink:href="#iconRefresh"></use></svg> 切换到在线登录`;
+            } else {
+                form1Element.classList.remove("fn__none");
+                formOfflineElement.classList.add("fn__none");
+                switchLoginModeBtn.innerHTML = `<svg><use xlink:href="#iconRefresh"></use></svg> 切换到离线登录`;
+            }
+        });
+
+        // 离线登录按钮
+        const loginOfflineBtn = element.querySelector("#loginOfflineBtn");
+        loginOfflineBtn?.addEventListener("click", () => {
+            const offlineUserId = (element.querySelector("#offlineUserId") as HTMLInputElement).value.trim();
+            const offlineUserName = (element.querySelector("#offlineUserName") as HTMLInputElement).value.trim();
+            const offlineUserNickname = (element.querySelector("#offlineUserNickname") as HTMLInputElement).value.trim();
+
+            fetchPost("/api/account/loginOffline", {
+                userId: offlineUserId,
+                userName: offlineUserName,
+                userNickname: offlineUserNickname
+            }, () => {
+                fetchPost("/api/setting/getCloudUser", {}, response => {
+                    account._afterLogin(response, element);
+                });
+            });
+        });
+
+        // 未登录状态，处理登录表单
+        const agreeLoginElement = element.querySelector("#agreeLogin") as HTMLInputElement;
         const userPasswordElement = element.querySelector("#userPassword") as HTMLInputElement;
         const captchaImgElement = element.querySelector("#captchaImg") as HTMLInputElement;
         const captchaElement = element.querySelector("#captcha") as HTMLInputElement;
