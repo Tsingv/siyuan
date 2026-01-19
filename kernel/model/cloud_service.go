@@ -124,6 +124,72 @@ func StartFreeTrial() (err error) {
 	return
 }
 
+// CreateOfflineUser 创建离线用户，试用期为10000天
+func CreateOfflineUser(userId, userName, userNickname string) *conf.User {
+	now := time.Now()
+	// 计算10000天后的过期时间（毫秒）
+	expireTime := now.AddDate(0, 0, 10000).UnixMilli()
+	// Token过期时间为30天后（秒）
+	tokenExpireTime := strconv.FormatInt(now.AddDate(0, 0, 30).Unix(), 10)
+
+	// 如果参数为空，使用默认值
+	if userId == "" {
+		userId = "offline-user-" + strconv.FormatInt(now.Unix(), 10)
+	}
+	if userName == "" {
+		userName = "OfflineUser"
+	}
+	if userNickname == "" {
+		userNickname = "离线用户"
+	}
+
+	user := &conf.User{
+		UserId:                       userId,
+		UserName:                     userName,
+		UserNickname:                 userNickname,
+		UserAvatarURL:                "",
+		UserHomeBImgURL:              "",
+		UserTitles:                   []*conf.UserTitle{},
+		UserIntro:                    "Offline Mode",
+		UserCreateTime:               strconv.FormatInt(now.Unix(), 10),
+		UserSiYuanProExpireTime:      float64(expireTime),
+		UserToken:                    "offline-token-" + gulu.Rand.String(32),
+		UserTokenExpireTime:          tokenExpireTime,
+		UserSiYuanRepoSize:           1024 * 1024 * 1024 * 8,  // 8GB
+		UserSiYuanAssetSize:          0,
+		UserTrafficUpload:            0,
+		UserTrafficDownload:          0,
+		UserTrafficAPIGet:            0,
+		UserTrafficAPIPut:            0,
+		UserSiYuanSubscriptionPlan:   2, // 2：试用
+		UserSiYuanSubscriptionStatus: 0, // 0：订阅可用
+		UserSiYuanSubscriptionType:   0, // 0 年付
+		UserSiYuanOneTimePayStatus:   0, // 0 未付费
+	}
+
+	logging.LogInfof("created offline user [%s/%s/%s] with expiration time: %v", userId, userName, userNickname, time.UnixMilli(int64(expireTime)))
+	return user
+}
+
+// LoginOfflineUser 登录离线账户
+func LoginOfflineUser(userId, userName, userNickname string) error {
+	user := CreateOfflineUser(userId, userName, userNickname)
+	Conf.SetUser(user)
+
+	// 保存用户数据
+	data, err := gulu.JSON.MarshalJSON(user)
+	if err != nil {
+		logging.LogErrorf("marshal offline user failed: %s", err)
+		return err
+	}
+	Conf.UserData = util.AESEncrypt(string(data))
+	Conf.Save()
+
+	logging.LogInfof("offline user [%s] logged in successfully", userName)
+	return nil
+}
+
+
 func DeactivateUser() (err error) {
 	requestResult := gulu.Ret.NewResult()
 	request := httpclient.NewCloudRequest30s()

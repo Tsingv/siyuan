@@ -95,3 +95,34 @@ func login(c *gin.Context) {
 	ret = model.Login(name, password, captcha, cloudRegion)
 	c.JSON(http.StatusOK, ret)
 }
+
+func loginOffline(c *gin.Context) {
+	ret := gulu.Ret.NewResult()
+	defer c.JSON(http.StatusOK, ret)
+
+	arg, ok := util.JsonArg(c, ret)
+	if !ok {
+		return
+	}
+
+	userId := ""
+	userName := ""
+	userNickname := ""
+
+	if val, exists := arg["userId"]; exists && val != nil {
+		userId = val.(string)
+	}
+	if val, exists := arg["userName"]; exists && val != nil {
+		userName = val.(string)
+	}
+	if val, exists := arg["userNickname"]; exists && val != nil {
+		userNickname = val.(string)
+	}
+
+	err := model.LoginOfflineUser(userId, userName, userNickname)
+	if err != nil {
+		ret.Code = -1
+		ret.Msg = err.Error()
+		return
+	}
+}

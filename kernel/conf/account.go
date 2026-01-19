@@ -17,13 +17,15 @@
 package conf
 
 type Account struct {
-	DisplayTitle bool `json:"displayTitle"`
-	DisplayVIP   bool `json:"displayVIP"`
+	DisplayTitle  bool `json:"displayTitle"`
+	DisplayVIP    bool `json:"displayVIP"`
+	UseOfflineMode bool `json:"useOfflineMode"` // 是否使用离线账户模式
 }
 
 func NewAccount() *Account {
 	return &Account{
-		DisplayTitle: true,
-		DisplayVIP:   true,
+		DisplayTitle:   true,
+		DisplayVIP:     true,
+		UseOfflineMode: true, // 默认使用离线模式
 	}
 }
