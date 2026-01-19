@@ -397,6 +397,9 @@ func InitConf() {
 		Conf.Account = conf.NewAccount()
 	}
 
+	// 注意：不在此处自动登录离线账户，以避免在初始化阶段写入文件导致锁定问题
+	// 用户可以通过UI手动登录离线账户
+
 	if nil == Conf.Sync {
 		Conf.Sync = conf.NewSync()
 	}
